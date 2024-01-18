@@ -6,6 +6,10 @@ import boto3
 import io
 import os
 from datetime import datetime
+import logging
+
+logging.getLogger().setLevel(logging.INFO)
+
 
 app = FastAPI()
 
@@ -30,7 +34,7 @@ def convert_pdf_to_jpg(response, author, bookId):
             image_bytes.seek(0)
             s3.upload_fileobj(image_bytes, BUCKET, fname)
             image.close()
-            print(f'Uploaded {fname}')
+            logging.info(f'Uploaded {fname}')
 
 @app.post("/books")
 def read_root(url: str, author: str, bookId: str, background_tasks: BackgroundTasks):
