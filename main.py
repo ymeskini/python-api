@@ -32,7 +32,7 @@ def convert_pdf_to_jpg(response, author, bookId):
             image.close()
             print(f'Uploaded {fname}')
 
-@app.get("/")
+@app.post("/books")
 def read_root(url: str, author: str, bookId: str, background_tasks: BackgroundTasks):
     response = urllib.request.urlopen(url).read()
     background_tasks.add_task(convert_pdf_to_jpg, response, author, bookId)
