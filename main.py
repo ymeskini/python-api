@@ -35,7 +35,7 @@ def upload_image_to_s3(image, fname):
 def convert_pdf_to_jpg(response, author, bookId):
     with tempfile.TemporaryDirectory() as path:
         images_from_path = convert_from_bytes(response, output_folder=path)
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(10) as executor:
             for i, image in enumerate(images_from_path):
                 fname = f'books/{author}/{bookId}/{i}.jpeg'
                 executor.submit(upload_image_to_s3, image, fname)
