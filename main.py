@@ -30,7 +30,9 @@ def upload_image_to_s3(image, fname):
     image.close()
     logging.info(f'Uploaded {fname}')
 
-def convert_pdf_to_jpg(response, author, bookId):
+def convert_pdf_to_jpg(url, author, bookId):
+    url = urllib.parse.quote(url, safe='/:')
+    response = urllib.request.urlopen(url).read()
     with tempfile.TemporaryDirectory() as path:
         images_from_path = convert_from_bytes(response, output_folder=path)
         with concurrent.futures.ThreadPoolExecutor(10) as executor:
@@ -41,8 +43,7 @@ def convert_pdf_to_jpg(response, author, bookId):
 
 @app.post("/books")
 def read_root(url: str, author: str, bookId: str, background_tasks: BackgroundTasks):
-    response = urllib.request.urlopen(url).read()
-    background_tasks.add_task(convert_pdf_to_jpg, response, author, bookId)
+    background_tasks.add_task(convert_pdf_to_jpg, url, author, bookId)
     return {
         "success": True
     }
