@@ -9,6 +9,7 @@ from fastapi import BackgroundTasks, FastAPI
 from pdf2image import convert_from_bytes
 import tempfile
 import boto3
+from selectolax.lexbor import LexborHTMLParser
 
 logging.getLogger().setLevel(logging.INFO)
 app = FastAPI()
@@ -33,8 +34,15 @@ def upload_image_to_s3(image, fname):
 def convert_pdf_to_jpg(url, author, bookId):
     url = urllib.parse.quote(url, safe='/:')
     response = urllib.request.urlopen(url).read()
+
+    if author == "binbaz":
+        tree = LexborHTMLParser(response)
+        url = tree.css_first("embed").attrs["src"] 
+        
+
     with tempfile.TemporaryDirectory() as path:
         images_from_path = convert_from_bytes(response, output_folder=path)
+
         with concurrent.futures.ThreadPoolExecutor(10) as executor:
             for i, image in enumerate(images_from_path):
                 fname = f'books/{author}/{bookId}/{i}.jpeg'
