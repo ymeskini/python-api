@@ -3,13 +3,13 @@ import os
 import io
 import concurrent.futures
 from datetime import datetime
-import urllib.request
+import re
 
+import urllib3
 from fastapi import BackgroundTasks, FastAPI
 from pdf2image import convert_from_bytes
 import tempfile
 import boto3
-from selectolax.lexbor import LexborHTMLParser
 
 logging.getLogger().setLevel(logging.INFO)
 app = FastAPI()
@@ -32,17 +32,23 @@ def upload_image_to_s3(image, fname):
     logging.info(f'Uploaded {fname}')
 
 def convert_pdf_to_jpg(url, author, bookId):
-    url = urllib.parse.quote(url, safe='/:')
-    response = urllib.request.urlopen(url).read()
+    url = urllib3.util.parse_url(url)
+    response = urllib3.request("GET", url.url)
 
     if author == "binbaz":
-        tree = LexborHTMLParser(response)
-        url = tree.css_first("embed").attrs["src"] 
-        
+        response = urllib3.request("GET", url.url)
+
+        url_pattern = r"https?://.*?\.pdf'"
+        urls = re.findall(url_pattern, response.data.decode('utf-8'), re.UNICODE)
+
+        # Remove the trailing single quote from each URL
+        url = [url[:-1] for url in urls]
+
+        url = urllib3.util.parse_url(url.pop(0))
+        response = urllib3.request("GET", url.url)
 
     with tempfile.TemporaryDirectory() as path:
-        images_from_path = convert_from_bytes(response, output_folder=path)
-
+        images_from_path = convert_from_bytes(response.data, output_folder=path)
         with concurrent.futures.ThreadPoolExecutor(10) as executor:
             for i, image in enumerate(images_from_path):
                 fname = f'books/{author}/{bookId}/{i}.jpeg'
